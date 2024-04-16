@@ -3,13 +3,6 @@ nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 import pandas as pd 
 
-import torch
-import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler,random_split
-
-import transformers
-from transformers import BertForSequenceClassification, AdamW, BertConfig,BertTokenizer,get_linear_schedule_with_warmup
-
 def preprocess_text(text):
     """
     Given an input text, returns the text as a list of preprocessed tokens
@@ -39,15 +32,16 @@ def main():
     # tokenize entries in dataset 
     # tokenized_toy_dataset = [preprocess_text(text) for text in toy_dataset]
 
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+    out_df = pd.DataFrame(
+        {
+            'text': toy_dataset,
+            'label': toy_labels
+        }
+    )
 
-    for sent in toy_dataset:
+    out_df.to_csv('toy_dataset.csv')
 
-        # Tokenize the text and add `[CLS]` and `[SEP]` tokens.
-        input_ids = tokenizer.encode(sent, add_special_tokens=True)
 
-        # Update the maximum sentence length.
-       
 
 
 main()

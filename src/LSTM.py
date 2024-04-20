@@ -1,3 +1,6 @@
+import pytorch
+from torch import nn
+
 class LSTM1(nn.Module):
     def __init__(self, num_classes, input_size, hidden_size, num_layers, seq_length):
         super(LSTM1, self).__init__()

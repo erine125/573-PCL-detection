@@ -1,7 +1,7 @@
 # 573-project
 
 
-Our system for D2 can be run with D2.cmd which calls `src/run_d2.sh`. We are unable to personally run our code on condor due to not having permissions to install dependencies, so if there are any issues with running the code on condor, the following README will provide all the necessary instructions to install dependencies and run our system.
+Our system for D2 can be run with D2.cmd which calls `src/run_d2.sh`. If there are any issues with running the code on condor, the following README will provide all the necessary instructions to install dependencies and run our system.
 
 First, install necessary requirements: `pip install -r requirements.txt`
 

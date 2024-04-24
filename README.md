@@ -29,4 +29,4 @@ Outputs for both models are available in `outputs/D2/`. Both models were trained
 Finally, to evaluate system output and generate the results files, run: `python /src/evaluation.py <results_filename> <devset_csv_filename> <outfile_name>`
 This will output the precision, recall, and F1 score over the devset, in the same format as the official scorer for SemEval-2022.
 
-Please see `src/run_d2.sh` for more specifics on how we call our scripts. 
+Please see `src/run_d2.sh` for more specifics on the calling order and the arguments we use to run our system end-to-end.

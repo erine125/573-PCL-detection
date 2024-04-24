@@ -17,7 +17,6 @@ from sklearn.metrics import classification_report
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # arguments:
-# glove_embeddings_file: path to the file containing the glove embeddings
 # train_data_file: path to training data csv 
 # test_data_file: path to test (or dev) data csv 
 # pred_output_file: filename to print output to 

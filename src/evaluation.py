@@ -21,16 +21,16 @@ with open(results_filename) as f:
     for line in f:
         task1_res.append(int(line.strip()))
 
-outf = open(outfile_name, 'w')
+with open(outfile_name, 'w') as outf:
 
-# task 1 scores
-t1p = precision_score(task1_gold, task1_res)
-t1r = recall_score(task1_gold, task1_res)
-t1f = f1_score(task1_gold, task1_res)
-# task1
-outf.write('task1_precision:'+str(t1p)+'\n')
-outf.write('task1_recall:'+str(t1r)+'\n')
-outf.write('task1_f1:'+str(t1f)+'\n')    
+    # task 1 scores
+    t1p = precision_score(task1_gold, task1_res)
+    t1r = recall_score(task1_gold, task1_res)
+    t1f = f1_score(task1_gold, task1_res)
+    # task1
+    outf.write('task1_precision:'+str(t1p)+'\n')
+    outf.write('task1_recall:'+str(t1r)+'\n')
+    outf.write('task1_f1:'+str(t1f)+'\n')    
 
 # Print the F1 score
-print('F1 score for: ' + results_filename + " " +str(t1f)+'\n')
+# print('F1 score for: ' + results_filename + " " +str(t1f)+'\n')

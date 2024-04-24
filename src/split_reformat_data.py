@@ -2,18 +2,22 @@ import nltk
 from nltk.tokenize import word_tokenize
 import pandas as pd 
 from sklearn.model_selection import train_test_split
+import sys
 
 """
 Reformats data into the format compatible with our classifier models for task 1.
+Saves 10% of the data as a dev test set.
 """
 
 def main():
 
-    data = 'data\dontpatronizeme_v1.5\DPM_trainingset\dontpatronizeme_pcl.tsv'
-    df = pd.read_csv(data, sep='\t', header=None, names=['par_id', 'art_id', 'keyword', 'country_code', 'text','label'])
+    [_, data_filename, devset_percentage] = sys.argv
 
-    # the training dataset has 10469 entries. leave 10% of these entries as our dev set.
-    train, dev = train_test_split(df, test_size=0.1, random_state=1) # using random state for controlled shuffles across calls
+    df = pd.read_csv(data_filename, sep='\t', header=None, names=['par_id', 'art_id', 'keyword', 'country_code', 'text','label'])
+
+    # split the training set into train and dev sets using the percentage argument
+    train, dev = train_test_split(df, test_size=float(devset_percentage), random_state=1) 
+    # using random state for controlled shuffles across calls
     
     train_text = train['text'].tolist()
     train_labels = train['label'].tolist() 

@@ -31,3 +31,6 @@ t1f = f1_score(task1_gold, task1_res)
 outf.write('task1_precision:'+str(t1p)+'\n')
 outf.write('task1_recall:'+str(t1r)+'\n')
 outf.write('task1_f1:'+str(t1f)+'\n')    
+
+# Print the F1 score
+print('F1 score for: ' + results_filename + " " +str(t1f)+'\n')

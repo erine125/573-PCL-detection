@@ -4,5 +4,6 @@ transformers
 numpy
 torch
 matplotlib
+scikit-learn
 
 

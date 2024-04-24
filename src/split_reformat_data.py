@@ -44,8 +44,8 @@ def main():
         }
     )
 
-    train_df.to_csv('train_dataset.csv')
-    dev_df.to_csv('dev_dataset.csv')
+    train_df.to_csv('data/split_data/train_dataset.csv')
+    dev_df.to_csv('data/split_data/dev_dataset.csv')
 
     # create gold standard label file for devset for evaluation
     # with open('dev_gold_labels.txt', 'w') as f:

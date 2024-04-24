@@ -142,7 +142,7 @@ def main():
     for epoch_i in range(0, NUM_EPOCHS):
         # Perform one full pass over the training set.
         print("")
-        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
+        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, NUM_EPOCHS))
         print('Training...')
         # Measure how long the training epoch takes.
         t0 = time.time()

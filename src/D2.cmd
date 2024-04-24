@@ -1,4 +1,4 @@
-executable = ./src/run_d2.sh
+executable = run_d2.sh
 error = run_d2.error
 log = run_d2.log
 getenv = true

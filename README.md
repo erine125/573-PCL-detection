@@ -7,7 +7,7 @@ First, install necessary requirements: `pip install -r requirements.txt`
 
 We have already split the data into the train and dev sets, available under `src/data/split_data`. If you wish to run the data splitting and reformatting code, run: `python /src/split_reformat_data.py /data/dontpatronizeme_v1.5/DPM_trainingset/dontpatronizeme_pcl.tsv <devset_percentage>` (we used 0.1 for devtest percentage). Otherwise, you can use the existing files `src/data/split_data/train_dataset.csv` and `src/data/split_data/dev_dataset.csv` as the train and test files when running the model scripts.
 
-Our two models are in `src/GloVe_PCL_detection.py` and `src/BERT_PCL_detection.py`. 
+Our two models are in `src/GloVe_PCL_detection.py` and `src/BERT_PCL_detection.py`. `src/GloVe_PCL_detection.py` and `src/BERT_PCL_detection.ipynb` contain the same code with some additional comments in a Jupyter Notebook file. 
 
 For the GloVe model, the arguments are:
 ```

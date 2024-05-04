@@ -29,7 +29,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 NUM_EPOCHS = 2
-UNDERSAMPLE = False 
+UNDERSAMPLE = False
+RANDOM_DELETION = True
+
+
 SEED = 42
 
 def main():
@@ -48,6 +51,17 @@ def main():
 
     sentences = df.text.values
     labels = df.target.values
+
+    # Apply data augmentation through random deletion for the minority class
+    if RANDOM_DELETION:
+        for stc_idx, stc in enumerate(sentences):
+            if labels[stc_idx] == 1:
+                new_stcs = random_delete(stc)
+                sentences.extend(new_stcs)
+                # what is the type of the elements in labels? int or string? int
+                new_labels = [1] * len(new_stcs)
+                labels.extend(new_labels)
+            
 
     # tokenize and get max length
     max_len = 0
@@ -373,5 +387,32 @@ def format_time(elapsed):
     elapsed_rounded = int(round((elapsed)))
     # Format as hh:mm:ss
     return str(datetime.timedelta(seconds=elapsed_rounded))
+
+def random_delete(sentence):
+    """
+    Pick a random index in a sentence, the word associated with that index is to be deleted.
+
+    Arguments: 
+        sentence: sentence string before random word removal
+    Returns: 
+        new_sentences: list of sentence strings after random word removal
+    """
+    words = sentence.split()
+    new_sentences = []
+
+    new_words = words.copy()
+    
+    # change this to select 9 random ints all at once
+    random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=9, replace=False)
+    for random_index in random_indices:
+        try:
+            del new_words[random_index]
+            new_sentence = new_words.join(" ")
+            new_sentences.append(new_sentence)
+        except IndexError:
+            pass
+        
+    return new_sentences
+
 
 main()

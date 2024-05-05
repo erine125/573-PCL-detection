@@ -52,15 +52,31 @@ def main():
     sentences = df.text.values
     labels = df.target.values
 
-    # Apply data augmentation through random deletion for the minority class
+# Apply data augmentation through random deletion for the minority class
     if RANDOM_DELETION:
+
+        # List for all the new sentences created through random deletion
+        all_new_stcs = []
+
+        # Loop through sentences in training data
+        # If the sentence is a positive sample (minority class),
+        # create 9 new sentences by randomly selecting one word to remove for each new sentence
         for stc_idx, stc in enumerate(sentences):
             if labels[stc_idx] == 1:
-                new_stcs = random_delete(stc)
-                sentences.extend(new_stcs)
-                # what is the type of the elements in labels? int or string? int
-                new_labels = [1] * len(new_stcs)
-                labels.extend(new_labels)
+                new_stcs_batch = random_delete(stc)
+
+                # Add the 9 new sentences created from this individual sample to all new sentences list
+                all_new_stcs.extend(new_stcs_batch)
+
+        # convert to numpy array and concatenate to previous sentence array
+        array_all_new_stcs = np.array(all_new_stcs)
+        sentences = np.concatenate((sentences, array_all_new_stcs), axis=0)
+
+        # add n positive labels (n being the number of new sentences) to the labels array
+        array_all_new_labels = np.array([1] * len(all_new_stcs))
+        labels = np.concatenate((labels, array_all_new_labels), axis=0)
+
+############ end of data augmentation ######################
             
 
     # tokenize and get max length
@@ -402,15 +418,21 @@ def random_delete(sentence):
 
     new_words = words.copy()
     
-    # change this to select 9 random ints all at once
-    random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=9, replace=False)
-    for random_index in random_indices:
-        try:
-            del new_words[random_index]
-            new_sentence = new_words.join(" ")
-            new_sentences.append(new_sentence)
-        except IndexError:
-            pass
+    if len(words) > 9:
+        
+        # select one random word to remove for each new sample (9 new samples in total)
+        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=9, replace=False)
+
+        # remove random word
+        for random_index in random_indices:
+            try:
+                new_words = words[:random_index] + words[random_index+1:]
+                new_sentence = " ".join(new_words)
+
+                # add to the list of new sentences based on the current sample
+                new_sentences.append(new_sentence)
+            except IndexError:
+                pass
         
     return new_sentences
 

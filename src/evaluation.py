@@ -9,7 +9,10 @@ https://github.com/Perez-AlmendrosC/dontpatronizeme/blob/master/semeval-2022/eva
 """
 
 # pass as arguments the files containing the results and the original CSV containing the gold output, and the name of the outfile to write the results to
-[_, results_filename, test_set_csv, outfile_name] = sys.argv
+# [_, results_filename, test_set_csv] = sys.argv
+
+results_filename = '..\\outputs\\D3\\D3_BERT_outputs_withRandomDelete'
+test_set_csv = 'data\\split_data\\dev_dataset.csv'
 
 # read in the CSV and get the gold labels
 gold_df = pd.read_csv(test_set_csv)
@@ -21,7 +24,7 @@ with open(results_filename) as f:
     for line in f:
         task1_res.append(int(line.strip()))
 
-with open(outfile_name, 'w') as outf:
+with open('output.txt', 'w') as outf:
 
     # task 1 scores
     t1p = precision_score(task1_gold, task1_res)

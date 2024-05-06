@@ -11,7 +11,7 @@ https://github.com/Perez-AlmendrosC/dontpatronizeme/blob/master/semeval-2022/eva
 # pass as arguments the files containing the results and the original CSV containing the gold output, and the name of the outfile to write the results to
 # [_, results_filename, test_set_csv] = sys.argv
 
-results_filename = '..\\outputs\\D3\\D3_BERT_outputs_withRandomDelete'
+results_filename = '..\\outputs\\D3\\BERT_SynonymReplace_4samples'
 test_set_csv = 'data\\split_data\\dev_dataset.csv'
 
 # read in the CSV and get the gold labels

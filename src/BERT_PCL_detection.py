@@ -29,8 +29,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 NUM_EPOCHS = 2
-UNDERSAMPLE = False
-RANDOM_DELETION = True
+DATA_AUGMENTATION = 'synonym_replace' #None, 'undersample', 'random_delete', or 'synonym_replace'
+AUGMENTATION_SAMPLE_COUNT = 4
+# UNDERSAMPLE = False
+# RANDOM_DELETION = True
 
 
 SEED = 42
@@ -42,7 +44,7 @@ def main():
     df = pd.read_csv(train_data_file)
 
     # undersampling to balance the two classes
-    if UNDERSAMPLE: 
+    if DATA_AUGMENTATION == 'undersample': 
         df = undersampling(df)
 
     
@@ -53,7 +55,7 @@ def main():
     labels = df.target.values
 
 # Apply data augmentation through random deletion for the minority class
-    if RANDOM_DELETION:
+    if DATA_AUGMENTATION == 'random_delete':
 
         # List for all the new sentences created through random deletion
         all_new_stcs = []
@@ -64,6 +66,28 @@ def main():
         for stc_idx, stc in enumerate(sentences):
             if labels[stc_idx] == 1:
                 new_stcs_batch = random_delete(stc)
+
+                # Add the 9 new sentences created from this individual sample to all new sentences list
+                all_new_stcs.extend(new_stcs_batch)
+
+        # convert to numpy array and concatenate to previous sentence array
+        array_all_new_stcs = np.array(all_new_stcs)
+        sentences = np.concatenate((sentences, array_all_new_stcs), axis=0)
+
+        # add n positive labels (n being the number of new sentences) to the labels array
+        array_all_new_labels = np.array([1] * len(all_new_stcs))
+        labels = np.concatenate((labels, array_all_new_labels), axis=0)
+
+    elif DATA_AUGMENTATION == 'synonym_replace':
+        # List for all the new sentences created through random deletion
+        all_new_stcs = []
+
+        # Loop through sentences in training data
+        # If the sentence is a positive sample (minority class),
+        # create 9 new sentences by randomly selecting one word to remove for each new sentence
+        for stc_idx, stc in enumerate(sentences):
+            if labels[stc_idx] == 1:
+                new_stcs_batch = synonym_replace(stc)
 
                 # Add the 9 new sentences created from this individual sample to all new sentences list
                 all_new_stcs.extend(new_stcs_batch)
@@ -418,10 +442,10 @@ def random_delete(sentence):
 
     new_words = words.copy()
     
-    if len(words) > 9:
+    if len(words) > AUGMENTATION_SAMPLE_COUNT:
         
         # select one random word to remove for each new sample (9 new samples in total)
-        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=9, replace=False)
+        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=AUGMENTATION_SAMPLE_COUNT, replace=False)
 
         # remove random word
         for random_index in random_indices:
@@ -435,6 +459,56 @@ def random_delete(sentence):
                 pass
         
     return new_sentences
+
+def get_synonyms(word):
+    """
+    Given a word, use WordNet to get a list of synonyms
+    """
+    synonyms = []
+    for syn in wordnet.synsets(word):
+        for l in syn.lemmas():
+            if word != l.name():
+                synonyms.append(l.name())
+    return synonyms
+
+
+def synonym_replace(sentence):
+    """
+    Pick a random index in a sentence. Replace the word associated with that index with a random synonym. 
+    (Assumes that stopwords, punctuation have already been removed)
+
+    Arguments: 
+        sentence: sentence string before augmentation
+    Returns: 
+        new_sentences: list of sentence strings after augmentation
+    """
+    words = sentence.split()
+    new_sentences = []
+
+    
+    
+    if len(words) > AUGMENTATION_SAMPLE_COUNT:
+        # select one random word to remove for each new sample 
+        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=AUGMENTATION_SAMPLE_COUNT, replace=False)
+
+        # remove random word
+        for random_index in random_indices:
+            new_words = words.copy()
+            
+            try:
+                synonym = random.choice(get_synonyms(words[random_index]))
+                new_words[random_index] = synonym
+                new_sentence = " ".join(new_words)
+
+                print(new_words)
+
+                # add to the list of new sentences based on the current sample
+                new_sentences.append(new_sentence)
+            except IndexError:
+                pass
+        
+    return new_sentences
+
 
 
 main()

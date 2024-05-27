@@ -11,41 +11,53 @@ Saves 10% of the data as a dev test set.
 
 def main():
 
-    [_, data_filename, devset_percentage] = sys.argv
+    # [_, data_filename, devset_percentage] = sys.argv
 
-    df = pd.read_csv(data_filename, sep='\t', header=None, names=['par_id', 'art_id', 'keyword', 'country_code', 'text','label'])
+    # df = pd.read_csv(data_filename, sep='\t', header=None, names=['par_id', 'art_id', 'keyword', 'country_code', 'text','label'])
+    eval = pd.read_csv("data\\PCL_test.tsv", sep='\t', header=None, names=['par_id', 'art_id', 'keyword', 'country_code', 'text','label'])
 
     # split the training set into train and dev sets using the percentage argument
-    train, dev = train_test_split(df, test_size=float(devset_percentage), random_state=1) 
+    # train, dev = train_test_split(df, test_size=float(devset_percentage), random_state=1) 
     # using random state for controlled shuffles across calls
     
-    train_text = train['text'].tolist()
-    train_labels = train['label'].tolist() 
+    # train_text = train['text'].tolist()
+    # train_labels = train['label'].tolist() 
 
-    dev_text = dev['text'].tolist()
-    dev_labels = dev['label'].tolist() 
+    # dev_text = dev['text'].tolist()
+    # dev_labels = dev['label'].tolist() 
+
+    eval_text = eval['text'].tolist()
 
     # convert labels to binary for task 1
     # according to PCL paper, 0 & 1 are considered 'not PCL' (0), while 2-4 are considered 'PCL' (1)
-    dev_labels = [0 if x <= 1 else 1 for x in dev_labels]
-    train_labels = [0 if x <= 1 else 1 for x in train_labels]
+    # dev_labels = [0 if x <= 1 else 1 for x in dev_labels]
+    # train_labels = [0 if x <= 1 else 1 for x in train_labels]
 
-    train_df = pd.DataFrame(
+
+    # train_df = pd.DataFrame(
+    #     {
+    #         'text': train_text,
+    #         'target': train_labels
+    #     }
+    # )
+
+    # dev_df = pd.DataFrame(
+    #     {
+    #         'text': dev_text,
+    #         'target': dev_labels
+    #     }
+    # )
+
+    eval_df = pd.DataFrame(
         {
-            'text': train_text,
-            'target': train_labels
+            'text': eval_text,
         }
     )
 
-    dev_df = pd.DataFrame(
-        {
-            'text': dev_text,
-            'target': dev_labels
-        }
-    )
+    eval_df.to_csv('data\\split_data\\eval_dataset.csv')
 
-    train_df.to_csv('data/split_data/train_dataset.csv')
-    dev_df.to_csv('data/split_data/dev_dataset.csv')
+    # train_df.to_csv('data/split_data/train_dataset.csv')
+    # dev_df.to_csv('data/split_data/dev_dataset.csv')
 
     # create gold standard label file for devset for evaluation
     # with open('dev_gold_labels.txt', 'w') as f:

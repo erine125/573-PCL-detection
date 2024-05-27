@@ -11,8 +11,8 @@ https://github.com/Perez-AlmendrosC/dontpatronizeme/blob/master/semeval-2022/eva
 # pass as arguments the files containing the results and the original CSV containing the gold output, and the name of the outfile to write the results to
 # [_, results_filename, test_set_csv] = sys.argv
 
-results_filename = '..\\outputs\\D3\\BERT_SynonymReplace_4samples'
-test_set_csv = 'data\\split_data\\dev_dataset.csv'
+results_filename = 'D4_BERT_FINAL_EVAL.out'
+test_set_csv = 'PCL_testlabels_t1.txt'
 
 # read in the CSV and get the gold labels
 gold_df = pd.read_csv(test_set_csv)
@@ -24,7 +24,7 @@ with open(results_filename) as f:
     for line in f:
         task1_res.append(int(line.strip()))
 
-with open('output.txt', 'w') as outf:
+with open('D4_EVAL_RESULTS_FINAL.txt', 'w') as outf:
 
     # task 1 scores
     t1p = precision_score(task1_gold, task1_res)

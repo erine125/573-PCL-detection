@@ -30,7 +30,7 @@ BATCH_SIZE = 16
 LEARNING_RATE = 2e-5
 NUM_EPOCHS = 2
 DATA_AUGMENTATION = 'synonym_replace' #None, 'undersample', 'random_delete', or 'synonym_replace'
-AUGMENTATION_SAMPLE_COUNT = 4
+AUGMENTATION_SAMPLE_COUNT = 2
 # UNDERSAMPLE = False
 # RANDOM_DELETION = True
 

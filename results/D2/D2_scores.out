@@ -1,0 +1,10 @@
+Scores for system using GloVe and CNN:
+task1_precision:0.08372093023255814
+task1_recall:0.34285714285714286
+task1_f1:0.13457943925233645
+
+Scores for system using BERT:
+task1_precision:0.5652173913043478
+task1_recall:0.49523809523809526
+task1_f1:0.5279187817258884
+

@@ -5,5 +5,7 @@ numpy
 torch
 matplotlib
 scikit-learn
+easymnt
+mosestokenizer
 
 

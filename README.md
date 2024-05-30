@@ -38,3 +38,5 @@ Our final D4 system can be run end-to-end using the .ipynb or .py files. The fil
 * `src/RoformerModel.[ipynb | py]` for the adaptation task using RoFormer model
 
 Each of the files except for `Translate_and_Evaluate` handle training, testing, and evaluation end-to-end, and output both an output (`.out`) and results (`.txt`) file. 
+
+There are no required arguments; our finalized hyperparameters are included in the scripts.

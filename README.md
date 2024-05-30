@@ -30,3 +30,11 @@ Finally, to evaluate system output and generate the results files, run: `python 
 This will output the precision, recall, and F1 score over the devset, in the same format as the official scorer for SemEval-2022.
 
 Please see `src/run_d2.sh` for more specifics on the calling order and the arguments we use to run our system end-to-end.
+
+Our final D4 system can be run end-to-end using the .ipynb or .py files. The files are:
+`src/BERT_PCL_detection.[ipynb | py]` for the primary task 
+`src/Translate_and_Evaluate.[ipynb | py]` for the adaptation task (translating the Chinese data, then evaluating on the pretrained model saved from BERT_PCL_detection
+`src/BERT_PCL_Detection_Chinese.[ipynb | py]` for the adaptation task (direct training on Chinese data)
+`src/RoformerModel.[ipynb | py]` for the adaptation task using RoFormer model
+
+Each of the files except for `Translate_and_Evaluate` handle training, testing, and evaluation end-to-end, and output both an output (`.out`) and results (`.txt`) file. 

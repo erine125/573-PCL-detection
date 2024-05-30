@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[32]:
+# In[1]:
 
 
 from transformers import AutoTokenizer, AutoModelForMaskedLM, BertTokenizerFast, RoFormerModel
@@ -9,15 +9,13 @@ import transformers
 from transformers import BertForSequenceClassification, AdamW, BertConfig,BertTokenizer,get_linear_schedule_with_warmup
 from transformers import RoFormerForSequenceClassification
 
-tokenizer = AutoTokenizer.from_pretrained('bert-base-chinese', use_fast = False, tokenize_chinese_chars =False)
-# tokenizer = BertTokenizerFast.from_pretrained('bert-base-chinese')
-
-model = AutoModelForMaskedLM.from_pretrained("bert-base-chinese")
+# tokenizer = AutoTokenizer.from_pretrained('bert-base-chinese', use_fast = False, tokenize_chinese_chars =False)
+tokenizer = BertTokenizerFast.from_pretrained('bert-base-chinese')
 
 # model = RoFormerModel.from_pretrained("junnyu/roformer_chinese_base")
 
 
-# In[33]:
+# In[2]:
 
 
 import torch
@@ -27,21 +25,21 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler,random_split
 
 
-# In[34]:
+# In[3]:
 
 
 # to run on GPU with CUDA
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-# In[35]:
+# In[4]:
 
 
-df = pd.read_csv("data\\CCPC_Dataset.csv")
+df = pd.read_csv("data\\CCPC_BinaryLabels.csv")
 df.head(n=10)
 
 
-# In[36]:
+# In[5]:
 
 
 from sklearn.model_selection import train_test_split
@@ -49,17 +47,17 @@ from sklearn.metrics import classification_report
 
 SEED = 42
 
-train_data, test_data = train_test_split(df, train_size = 0.1, random_state = SEED)
+train_data, test_data = train_test_split(df, train_size = 0.9, random_state = SEED)
 
 
-# In[37]:
+# In[6]:
 
 
-train_sentences = test_data.text.values
-train_labels = df.target.values
+train_sentences = train_data.text.values
+train_labels = train_data.target.values
 
 
-# In[38]:
+# In[7]:
 
 
 # split train into train and validation
@@ -108,7 +106,7 @@ train_size = 0.8  # 80% of the data for training
 train_sentences, train_labels, val_sentences, val_labels = split_data_randomly(train_sentences, train_labels, train_size, random_seed=42)
 
 
-# In[39]:
+# In[8]:
 
 
 # Training
@@ -127,7 +125,7 @@ for sent in train_sentences:
 print('Max sentence length: ', max_len)
 
 
-# In[40]:
+# In[9]:
 
 
 # This just shows how it has been tokenized and id-mapped. We can delete.
@@ -140,7 +138,7 @@ print('Tokenized: ', tokenizer.tokenize(train_sentences[0]))
 print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_sentences[0]))) 
 
 
-# In[41]:
+# In[10]:
 
 
 train_input_ids = []
@@ -181,7 +179,7 @@ print('Original: ', train_sentences[0])
 print('Token IDs:', train_input_ids[0])
 
 
-# In[42]:
+# In[11]:
 
 
 val_input_ids = []
@@ -222,7 +220,7 @@ print('Original: ', val_sentences[0])
 print('Token IDs:', val_input_ids[0])
 
 
-# In[43]:
+# In[12]:
 
 
 # Combine the training inputs into a TensorDataset.
@@ -237,7 +235,7 @@ print(len(val_dataset), ' validation samples')
 print(train_dataset[:10])
 
 
-# In[44]:
+# In[13]:
 
 
 batch_size = 16
@@ -258,7 +256,7 @@ validation_dataloader = DataLoader(
         )
 
 
-# In[45]:
+# In[14]:
 
 
 # model = RoFormerForSequenceClassification.from_pretrained(
@@ -273,33 +271,28 @@ model = BertForSequenceClassification.from_pretrained(
     "bert-base-chinese", # Use the 12-layer BERT model, with an uncased vocab.
     num_labels = 2, # The number of output labels--2 for binary classification.
                     # You can increase this for multi-class tasks.
-    output_attentions = False, # Whether the model returns attentions weights.
-    output_hidden_states = False, # Whether the model returns all hidden-states.
 )
 
 # enable gradient checkpointing to avoid out of memory with GPU training
 model.gradient_checkpointing_enable()
 
-# if device == "cuda:0":
-# # Tell pytorch to run this model on the GPU.
-#     model = model.cuda()
 model = model.to(device)
 
 
-# In[46]:
+# In[15]:
 
 
 optimizer = AdamW(model.parameters(),
-                  lr = 5e-5, # args.learning_rate - default is 5e-5, our notebook had 2e-5
+                  lr = 2e-5, # args.learning_rate - default is 5e-5, our notebook had 2e-5
                   eps = 1e-8 # args.adam_epsilon  - default is 1e-8.
                 )
 
 
-# In[47]:
+# In[16]:
 
 
 # Number of training epochs
-epochs = 4
+epochs = 2
 
 # Total number of training steps is [number of batches] x [number of epochs].
 # (Note that this is not the same as the number of training samples).
@@ -311,7 +304,7 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
                                             num_training_steps = total_steps)
 
 
-# In[48]:
+# In[17]:
 
 
 import random
@@ -319,7 +312,7 @@ import datetime
 import time
 
 
-# In[49]:
+# In[18]:
 
 
 # Function to calculate the accuracy of our predictions vs labels
@@ -329,7 +322,7 @@ def flat_accuracy(preds, labels):
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
-# In[50]:
+# In[19]:
 
 
 def format_time(elapsed):
@@ -342,7 +335,7 @@ def format_time(elapsed):
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
 
-# In[51]:
+# In[20]:
 
 
 random.seed(SEED)
@@ -473,7 +466,7 @@ print("Training complete!")
 print("Total training took {:} (h:mm:ss)".format(format_time(time.time()-total_t0)))
 
 
-# In[ ]:
+# In[21]:
 
 
 # TESTING
@@ -481,7 +474,7 @@ print("Total training took {:} (h:mm:ss)".format(format_time(time.time()-total_t
 model = torch.load('bert_model_Chinese') # load the chinese model
 
 
-# In[ ]:
+# In[28]:
 
 
 # test_sentences = test_data['text'].values
@@ -491,7 +484,7 @@ test_sentences = val_sentences
 test_labels = val_labels
 
 
-# In[ ]:
+# In[29]:
 
 
 test_input_ids = []
@@ -513,7 +506,7 @@ test_input_ids = torch.cat(test_input_ids, dim=0)
 test_attention_masks = torch.cat(test_attention_masks, dim=0)
 
 
-# In[ ]:
+# In[30]:
 
 
 batch_size = 16
@@ -526,7 +519,7 @@ test_dataloader = DataLoader(
         )
 
 
-# In[ ]:
+# In[31]:
 
 
 predictions = []
@@ -544,18 +537,18 @@ for batch in test_dataloader:
             predictions.extend(list(pred_flat))
 
 
-# In[ ]:
+# In[32]:
 
 
 df_output = pd.DataFrame()
 #df_output['id'] = df_test['id'] # Do we need to add ids?
 df_output['target'] =predictions
-results_filename = 'bert_chinese.out'
+results_filename = 'bert_chinese_devtest_fixed.out'
 
 df_output.to_csv(results_filename,index=False, header=False)
 
 
-# In[ ]:
+# In[33]:
 
 
 # EVALUATION
@@ -574,7 +567,7 @@ with open(results_filename) as f:
     for line in f:
         task1_res.append(int(line.strip()))
 
-with open('bert_chinese_dev_results.txt', 'w') as outf:
+with open('bert_chinese_devtest_fixed_results.txt', 'w') as outf:
 
     # task 1 scores
     t1p = precision_score(task1_gold, task1_res)

@@ -1,144 +1,69 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[64]:
+# In[1]:
 
 
-import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('wordnet')
-from nltk.tokenize import word_tokenize
-import pandas as pd
-
-import transformers
+from transformers import AutoTokenizer, AutoModelForMaskedLM, BertTokenizerFast, RoFormerModel, RoFormerTokenizerFast
 from transformers import BertForSequenceClassification, AdamW, BertConfig,BertTokenizer,get_linear_schedule_with_warmup
+from transformers import RoFormerForSequenceClassification
 
 
-# In[65]:
+# In[2]:
 
 
-import numpy as np
-import time
-import datetime
-import random
-from nltk.corpus import stopwords
-import re
+tokenizer = RoFormerTokenizerFast.from_pretrained("junnyu/roformer_chinese_base")
+model = RoFormerModel.from_pretrained("junnyu/roformer_chinese_base")
+
+
+# In[3]:
+
 
 import torch
+import pandas as pd
+
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler,random_split
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-
-from nltk.corpus import wordnet
 
 
-# In[66]:
+# In[4]:
 
 
-REMOVE_STOPWORDS = False
-
-
-# In[67]:
-
-
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-
-
-# In[68]:
-
-
-## to run it on Ca
-
+# to run on GPU with CUDA
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device
 
 
-# In[69]:
+# In[5]:
 
 
-# Transform to pd dataframe and print first rows
-df = pd.read_csv("data\\split_data\\train_dataset.csv")
+df = pd.read_csv("data\\CCPC_BinaryLabels.csv")
 df.head(n=10)
 
 
-# In[70]:
+# In[6]:
 
 
-# This is the preprocessing from the tutorial. We may adapt it however we want.
-# This one is VERY strict so it removes stopwords, emojis, punctuation, etc.
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
-sw = stopwords.words('english')
+SEED = 42
 
-def clean_text(text):
-
-    text = text.lower()
-
-    text = re.sub(r"[^a-zA-Z?.!,¿]+", " ", text) # replacing everything with space except (a-z, A-Z, ".", "?", "!", ",")
-
-    text = re.sub(r"http\S+", "",text) #Removing URLs
-    #text = re.sub(r"http", "",text)
-
-    html=re.compile(r'<.*?>')
-
-    text = html.sub(r'',text) #Removing html tags
-
-    punctuations = '@#!?+&*[]-%.:/();$=><|{}^' + "'`" + '_'
-    for p in punctuations:
-        text = text.replace(p,'') #Removing punctuations
-
-    if REMOVE_STOPWORDS:
-
-        text = [word.lower() for word in text.split() if word.lower() not in sw]
-
-        text = " ".join(text) #removing stopwords
-
-    else:
-        text = [word.lower() for word in text.split()]
-
-        text = " ".join(text) #removing stopwords
+test_data, train_data = train_test_split(df, train_size = 0.9, random_state = SEED)
 
 
-    emoji_pattern = re.compile("["
-                           u"\U0001F600-\U0001F64F"  # emoticons
-                           u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                           u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                           u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                           u"\U00002702-\U000027B0"
-                           u"\U000024C2-\U0001F251"
-                           "]+", flags=re.UNICODE)
-    text = emoji_pattern.sub(r'', text) #Removing emojis
-
-    return text
+# In[7]:
 
 
-# In[71]:
+train_sentences = train_data.text.values
+train_labels = train_data.target.values
 
 
-# Applied preprocessing
+# In[8]:
 
 
-# for index, row in df.iterrows():
-#     if type(row['text']) == float:
-#         print(row['text'])
-#         print(index)
+# split train into train and validation
 
-df['text'] = df['text'].apply(lambda x: clean_text(x))
-df.head()
-len(df)
-
-
-# In[72]:
-
-
-sentences = df.text.values
-labels = df.target.values
-random_seed = 42 
-
-
-# In[73]:
-
+import numpy as np
 
 def split_data_randomly(sentences, labels, train_size, random_seed=None):
     """
@@ -177,212 +102,12 @@ def split_data_randomly(sentences, labels, train_size, random_seed=None):
 
     return train_sentences, train_labels, val_sentences, val_labels
 
-train_size = 0.8  # 80% of the data for training
+train_size = 0.9  
 
-train_sentences, train_labels, val_sentences, val_labels = split_data_randomly(sentences, labels, train_size, random_seed=42)
-
-print(len(train_sentences))
-print(len(val_sentences))
-print(len(train_labels))
-print(len(val_labels))
+train_sentences, train_labels, val_sentences, val_labels = split_data_randomly(train_sentences, train_labels, train_size, random_seed=42)
 
 
-# In[74]:
-
-
-AUGMENTATION_SAMPLE_COUNT = 2
-random.seed(42) 
-
-def random_delete(sentence):
-    """
-    Pick a random index in a sentence, the word associated with that index is to be deleted.
-
-    Arguments: 
-        sentence: sentence string before random word removal
-    Returns: 
-        new_sentences: list of sentence strings after random word removal
-    """
-    words = sentence.split()
-    new_sentences = []
-
-    
-    
-    if len(words) > AUGMENTATION_SAMPLE_COUNT:
-        
-        # select one random word to remove for each new sample (3 new samples in total)
-        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=AUGMENTATION_SAMPLE_COUNT , replace=False)
-
-        # remove random word
-        for random_index in random_indices:
-            new_words = words.copy()
-            try:
-                new_words = words[:random_index] + words[random_index+1:]
-                new_sentence = " ".join(new_words)
-
-                # add to the list of new sentences based on the current sample
-                new_sentences.append(new_sentence)
-            except IndexError:
-                pass
-        
-    return new_sentences
-
-
-
-# In[75]:
-
-
-def get_synonyms(word):
-    """
-    Given a word, use WordNet to get a list of synonyms
-    """
-    synonyms = []
-    for syn in wordnet.synsets(word):
-        for l in syn.lemmas():
-            if word != l.name():
-                synonyms.append(l.name())
-    return synonyms
-
-
-
-# In[76]:
-
-
-AUGMENTATION_SAMPLE_COUNT = 2
-
-def synonym_replace(sentence):
-    """
-    Pick a random index in a sentence. Replace the word associated with that index with a random synonym. 
-    (Assumes that stopwords, punctuation have already been removed)
-
-    Arguments: 
-        sentence: sentence string before augmentation
-    Returns: 
-        new_sentences: list of sentence strings after augmentation
-    """
-    words = sentence.split()
-    new_sentences = []
-
-    
-    
-    if len(words) > AUGMENTATION_SAMPLE_COUNT :
-        # select one random word to remove for each new sample 
-        random_indices =  np.random.choice(np.arange(0, len(words) + 1), size=AUGMENTATION_SAMPLE_COUNT, replace=False)
-
-        # remove random word
-        for random_index in random_indices:
-            new_words = words.copy()
-            
-            try:
-                synonym = random.choice(get_synonyms(words[random_index]))
-                new_words[random_index] = synonym
-                new_sentence = " ".join(new_words)
-
-                print(new_words)
-
-                # add to the list of new sentences based on the current sample
-                new_sentences.append(new_sentence)
-            except IndexError:
-                pass
-        
-    return new_sentences
-
-
-
-# In[77]:
-
-
-# Import translation model
-from transformers import MarianMTModel, MarianTokenizer
-
-# Helper function to download data for a language
-def download(model_name):
-  tokenizer = MarianTokenizer.from_pretrained(model_name)
-  model = MarianMTModel.from_pretrained(model_name)
-  return tokenizer, model
-
-# download model for English -> Romance
-tmp_lang_tokenizer, tmp_lang_model = download('Helsinki-NLP/opus-mt-en-ROMANCE')
-# download model for Romance -> English
-src_lang_tokenizer, src_lang_model = download('Helsinki-NLP/opus-mt-ROMANCE-en')
-
-
-# In[78]:
-
-
-def translate(texts, model, tokenizer, language):
-  """Translate texts into a target language"""
-  # Format the text as expected by the model
-  formatter_fn = lambda txt: f"{txt}" if language == "en" else f">>{language}<< {txt}"
-  original_texts = [formatter_fn(txt) for txt in texts]
-
-  # Tokenize (text to tokens)
-  tokens = tokenizer.prepare_seq2seq_batch(original_texts)
-
-  # Translate
-  translated = model.generate(**tokens)
-
-  # Decode (tokens to text)
-  translated_texts = tokenizer.batch_decode(translated, skip_special_tokens=True)
-
-  return translated_texts
-
-def back_translate(texts, language_src, language_dst):
-  """Implements back translation"""
-  # Translate from source to target language
-  translated = translate(texts, tmp_lang_model, tmp_lang_tokenizer, language_dst)
-
-  # Translate from target language back to source language
-  back_translated = translate(translated, src_lang_model, src_lang_tokenizer, language_src)
-
-  return back_translated
-
-
-# In[79]:
-
-
-# List for all the new sentences created through random deletion
-# all_new_stcs = []
-
-# # Loop through sentences in training data
-# # If the sentence is a positive sample (minority class),
-# # create new sentences by randomly selecting one word to remove for each new sentence
-# for stc_idx, stc in enumerate(train_sentences):
-#     if labels[stc_idx] == 1:
-#         new_stcs_batch = synonym_replace(stc)
-
-#         # Add the new sentences created from this individual sample to all new sentences list
-#         all_new_stcs.extend(new_stcs_batch)
-
-# # convert to numpy array and concatenate to previous sentence array
-# array_all_new_stcs = np.array(all_new_stcs)
-# train_sentences = np.concatenate((train_sentences, array_all_new_stcs), axis=0)
-
-# # add n positive labels (n being the number of new sentences) to the labels array
-# array_all_new_labels = np.array([1] * len(all_new_stcs))
-# train_labels = np.concatenate((train_labels, array_all_new_labels), axis=0)
-
-# print(len(train_sentences))
-# print(len(val_sentences))
-# print(len(train_labels))
-# print(len(val_labels))
-
-############ end of data augmentation ######################
-
-
-# In[80]:
-
-
-# This just shows how it has been tokenized and id-mapped. We can delete.
-print(' Original: ', train_sentences[0])
-
-# Print the sentence split into tokens.
-print('Tokenized: ', tokenizer.tokenize(train_sentences[0]))
-
-# Print the sentence mapped to token ids.
-print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_sentences[0]))) 
-
-
-# In[81]:
+# In[9]:
 
 
 # Training
@@ -401,26 +126,20 @@ for sent in train_sentences:
 print('Max sentence length: ', max_len)
 
 
-# In[82]:
+# In[10]:
 
 
-# Validation
-# This actually tokenizes all the sentences and updates the max length so the model knows where to pad the sentences.
-# max_len = 0
+# This just shows how it has been tokenized and id-mapped. We can delete.
+print(' Original: ', train_sentences[0])
 
-# For every sentence...
-for sent in val_sentences:
+# Print the sentence split into tokens.
+print('Tokenized: ', tokenizer.tokenize(train_sentences[0]))
 
-    # Tokenize the text and add `[CLS]` and `[SEP]` tokens.
-    val_input_ids = tokenizer.encode(sent, add_special_tokens=True)
-
-    # Update the maximum sentence length.
-    max_len = max(max_len, len(val_input_ids))
-
-print('Max sentence length: ', max_len)
+# Print the sentence mapped to token ids.
+print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_sentences[0]))) 
 
 
-# In[83]:
+# In[11]:
 
 
 train_input_ids = []
@@ -461,7 +180,7 @@ print('Original: ', train_sentences[0])
 print('Token IDs:', train_input_ids[0])
 
 
-# In[84]:
+# In[12]:
 
 
 val_input_ids = []
@@ -502,7 +221,7 @@ print('Original: ', val_sentences[0])
 print('Token IDs:', val_input_ids[0])
 
 
-# In[85]:
+# In[13]:
 
 
 # Combine the training inputs into a TensorDataset.
@@ -511,52 +230,13 @@ train_dataset = TensorDataset(train_input_ids, train_attention_masks, train_labe
 # Combine the validation inputs into a TensorDataset.
 val_dataset = TensorDataset(val_input_ids, val_attention_masks, val_labels)
 
-
-# Create a 90-10 train-validation split.
-
-# # Calculate the number of samples to include in each set.
-# train_size = int(0.8 * len(dataset))
-# #val_size = int(0.2 * len(dataset))
-# val_size = len(dataset)  - train_size
-
-# # Divide the dataset by randomly selecting samples.
-# train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-
-# print('{:>5,} training samples'.format(train_size))
-# print('{:>5,} validation samples'.format(val_size))
-
 print(len(train_dataset), ' training samples')
 print(len(val_dataset), ' validation samples')
 
-print(train_dataset[:10])
+
+# In[14]:
 
 
-# In[86]:
-
-
-# # Combine the training inputs into a TensorDataset.
-# dataset = TensorDataset(input_ids, attention_masks, labels)
-
-# # Create a 90-10 train-validation split.
-
-# # Calculate the number of samples to include in each set.
-# train_size = int(0.8 * len(dataset))
-# #val_size = int(0.2 * len(dataset))
-# val_size = len(dataset)  - train_size
-
-# # Divide the dataset by randomly selecting samples.
-# train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-
-# print('{:>5,} training samples'.format(train_size))
-# print('{:>5,} validation samples'.format(val_size))
-
-
-# In[87]:
-
-
-# The DataLoader needs to know our batch size for training, so we specify it
-# here. For fine-tuning BERT on a specific task, the authors recommend a batch
-# size of 16 or 32.
 batch_size = 16
 
 # Create the DataLoaders for our training and validation sets.
@@ -575,13 +255,11 @@ validation_dataloader = DataLoader(
         )
 
 
-# In[88]:
+# In[15]:
 
 
-# Load BertForSequenceClassification, the pretrained BERT model with a single
-# linear classification layer on top.
-model = BertForSequenceClassification.from_pretrained(
-    "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+model = RoFormerForSequenceClassification.from_pretrained(
+    "junnyu/roformer_chinese_base", 
     num_labels = 2, # The number of output labels--2 for binary classification.
                     # You can increase this for multi-class tasks.
     output_attentions = False, # Whether the model returns attentions weights.
@@ -591,13 +269,10 @@ model = BertForSequenceClassification.from_pretrained(
 # enable gradient checkpointing to avoid out of memory with GPU training
 model.gradient_checkpointing_enable()
 
-# if device == "cuda:0":
-# # Tell pytorch to run this model on the GPU.
-#     model = model.cuda()
 model = model.to(device)
 
 
-# In[89]:
+# In[16]:
 
 
 optimizer = AdamW(model.parameters(),
@@ -606,7 +281,7 @@ optimizer = AdamW(model.parameters(),
                 )
 
 
-# In[90]:
+# In[17]:
 
 
 # Number of training epochs
@@ -622,7 +297,15 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
                                             num_training_steps = total_steps)
 
 
-# In[91]:
+# In[18]:
+
+
+import random
+import datetime
+import time
+
+
+# In[19]:
 
 
 # Function to calculate the accuracy of our predictions vs labels
@@ -632,7 +315,7 @@ def flat_accuracy(preds, labels):
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
-# In[92]:
+# In[20]:
 
 
 def format_time(elapsed):
@@ -645,16 +328,14 @@ def format_time(elapsed):
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
 
-# In[93]:
+# In[21]:
 
 
-seed_val = 42
-random.seed(seed_val)
-np.random.seed(seed_val)
-torch.manual_seed(seed_val)
-torch.cuda.manual_seed_all(seed_val)
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
 training_stats = []
-
 # Measure the total training time for the whole run.
 total_t0 = time.time()
 
@@ -757,7 +438,7 @@ for epoch_i in range(0, epochs):
     # Measure how long the validation run took.
     validation_time = format_time(time.time() - t0)
     if avg_val_accuracy > best_eval_accuracy:
-        torch.save(model, 'bert_model_EngWithStopwords')
+        torch.save(model, 'RoFormerModel_Chinese')
         best_eval_accuracy = avg_val_accuracy
     #print("  Validation Loss: {0:.2f}".format(avg_val_loss))
     #print("  Validation took: {:}".format(validation_time))
@@ -778,27 +459,22 @@ print("Training complete!")
 print("Total training took {:} (h:mm:ss)".format(format_time(time.time()-total_t0)))
 
 
-# In[56]:
+# In[22]:
 
 
-model = torch.load('bert_model_EngWithStopwords')
+# TESTING
+
+model = torch.load('RoFormerModel_Chinese') # load the chinese model
 
 
-# In[58]:
+# In[23]:
 
 
-df_test = pd.read_csv('data\\split_data\\eval_dataset.csv')
-
-# for i in df_test['text']:
-#     try: clean_text(i) 
-#     except AttributeError:
-#         print(i)
-
-df_test['text'] = df_test['text'].apply(lambda x:clean_text(x))
-test_sentences = df_test['text'].values
+test_sentences = test_data['text'].values
+test_labels = test_data['target'].values
 
 
-# In[59]:
+# In[24]:
 
 
 test_input_ids = []
@@ -820,8 +496,10 @@ test_input_ids = torch.cat(test_input_ids, dim=0)
 test_attention_masks = torch.cat(test_attention_masks, dim=0)
 
 
-# In[61]:
+# In[25]:
 
+
+batch_size = 16
 
 test_dataset = TensorDataset(test_input_ids, test_attention_masks)
 test_dataloader = DataLoader(
@@ -831,7 +509,7 @@ test_dataloader = DataLoader(
         )
 
 
-# In[62]:
+# In[26]:
 
 
 predictions = []
@@ -849,16 +527,18 @@ for batch in test_dataloader:
             predictions.extend(list(pred_flat))
 
 
-# In[63]:
+# In[27]:
 
 
 df_output = pd.DataFrame()
 #df_output['id'] = df_test['id'] # Do we need to add ids?
 df_output['target'] =predictions
-df_output.to_csv('D4_BERT_FINAL_EVAL.out',index=False, header=False)
+results_filename = 'RoFormer_Evaltest.out'
+
+df_output.to_csv(results_filename,index=False, header=False)
 
 
-# In[46]:
+# In[28]:
 
 
 # EVALUATION
@@ -868,12 +548,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score, classificat
 import numpy as np
 import pandas as pd
 
-results_filename = 'D4_BERT_NO_DATAAUG_withSW.out'
-test_set_csv = 'data\\split_data\\dev_dataset.csv'
-
 # read in the CSV and get the gold labels
-gold_df = pd.read_csv(test_set_csv)
-task1_gold = gold_df['target'].tolist()
+task1_gold = test_labels
 
 # read in the results file and get the system output labels
 task1_res = []
@@ -881,7 +557,7 @@ with open(results_filename) as f:
     for line in f:
         task1_res.append(int(line.strip()))
 
-with open('D4_BERT_NO_DATAAUG_withSW_Results.txt', 'w') as outf:
+with open('RoFormer_Evaltest_Results.txt', 'w') as outf:
 
     # task 1 scores
     t1p = precision_score(task1_gold, task1_res)
@@ -891,10 +567,4 @@ with open('D4_BERT_NO_DATAAUG_withSW_Results.txt', 'w') as outf:
     outf.write('task1_precision:'+str(t1p)+'\n')
     outf.write('task1_recall:'+str(t1r)+'\n')
     outf.write('task1_f1:'+str(t1f)+'\n')    
-
-
-# In[ ]:
-
-
-
 

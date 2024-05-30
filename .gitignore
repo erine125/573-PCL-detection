@@ -162,3 +162,5 @@ cython_debug/
 # ignore files that are too large
 /src/bert_model
 /src/data/glove.6B.50d.txt
+/src/bert_model_Chinese
+/src/bert_model_EngWithStopwords

@@ -2,9 +2,9 @@
 
 This repository contains source code for our system for [SemEval 2022 Task 4: Patronizing and Condescending Language Detection](https://aclanthology.org/2022.semeval-1.38/). This system was built as a project for LING 573: NLP Systems & Applications at the University of Washington. 
 
-First, install necessary requirements: `pip install -r requirements.txt`
+Below are the instructions to run our code. First, install necessary requirements: `pip install -r requirements.txt`
 
-We have already split the data into the train and dev sets, available under `src/data/split_data`. If you wish to run the data splitting and reformatting code, run: `python /src/split_reformat_data.py /data/dontpatronizeme_v1.5/DPM_trainingset/dontpatronizeme_pcl.tsv <devset_percentage>` (we used 0.1 for devtest percentage). Otherwise, you can use the existing files `src/data/split_data/train_dataset.csv` and `src/data/split_data/dev_dataset.csv` as the train and test files when running the model scripts.
+The training data comes from the [_Don't Patronize Me!_ dataset](https://github.com/Perez-AlmendrosC/dontpatronizeme). To run our code, first run `/src/split_reformat_data.py` on the _Don't Patronize Me!_ training set CSV file. The command-line arguments are: `python /src/split_reformat_data.py <filename> <percentage reserved for devset>` (we used 0.1 for devtest percentage)
 
 Our initial models are in `src/GloVe_PCL_detection.py` and `src/BERT_PCL_detection.py`. `src/GloVe_PCL_detection.py` and `src/BERT_PCL_detection.ipynb` contain the same code with some additional comments in a Jupyter Notebook file. 
 
